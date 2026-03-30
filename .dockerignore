@@ -1,0 +1,25 @@
+# Python cache — never needed inside a container
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environment — NEVER copy this into the container
+# The container builds its own isolated Python environment via pip
+# Copying venv into the container doubles image size and causes import conflicts
+virtual/
+.virtual/
+env/
+
+# Git history — not needed at runtime
+.git/
+.gitignore
+
+# Environment files — secrets should be injected via docker-compose, not baked in
+.env
+
+# Editor metadata
+.vscode/
+.idea/
+*.swp

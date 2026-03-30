@@ -1,36 +1,108 @@
+# version tells Docker Compose which syntax version to use
+# '3.8' is widely supported and has all features you need
+# version: '3.8'
+
+
+# services = the containers you want to run
+# Each key under services = one container
 services:
+  # 'db' is our PostgreSQL container
+  # This name is also the hostname other containers use to reach it
+  # Your FastAPI app will connect to postgres at host 'db', not 'localhost'
+  # This is a key concept: inside Docker's network, containers talk to each other
+  # by service name, not by localhost or IP address
   db:
+    # Use the official PostgreSQL 15 image from Docker Hub
+    # Always pin a version — postgres:latest is dangerous in production
     image: postgres:15-alpine
     container_name: fastapi_postgres
+
+    # Container restart policy
+    # unless-stopped = restart on crash or server reboot, but not if you manually stop it
+    # This matters in production — without it, a crash kills your DB permanently
+    restart: unless-stopped
+
+    # Environment variables injected into the Postgres container
+    # The official Postgres image reads these to create the DB on first startup
     environment:
-      POSTGRES_DB: fastapi_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres123
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+
+    # Named volume for persistent storage
+    # Without this, all your data is lost every time the container restarts
+    # Docker manages where 'postgres_data' actually lives on your disk
     volumes:
       - fastapi_postgres_data:/var/lib/postgresql/data
+
+    # Expose port 5432 on your local machine mapped to 5432 inside the container
+    # Format: "HOST_PORT:CONTAINER_PORT"
+    # This lets you connect to the DB from your local machine (e.g., with DBeaver)
+    # without it, the DB is only reachable from other containers, not from localhost
     ports:
       - "5433:5432"    # 5433 on host to avoid conflict with Django's 5432
+
+    # Health check tells Docker how to test if Postgres is ready to accept connections
+    # Without this, your API container might start before Postgres is fully ready
+    # and fail with "connection refused" errors
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d fastapi_db"]
+      # pg_isready is a postgres utility that pings the DB to check if it's ready
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER} -d ${DATABASE_NAME}"]
+      # Check every 10 seconds
       interval: 10s
+      # If no response in 5 seconds, it's a failure
       timeout: 5s
+      # After 5 consecutive failures, mark the container as unhealthy
       retries: 5
 
+  # 'api' is our FastAPI container — built from our local Dockerfile
   web:
+    # build: . tells Docker Compose to build the image using the Dockerfile
+    # in the current directory (.) instead of pulling from Docker Hub
     build: .
+
+    # The container name — makes 'docker logs api' work instead of the random name
     container_name: fastapi_web
+
+
     restart: unless-stopped
     # uvicorn with --reload for development inside Docker
+
+    # Override CMD from Dockerfile for local development only
+    # Add --reload so the server restarts when you change code
+    # This works because of the volume mount above — code changes are live inside the container
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+    # Bind mount: sync your local code directory into the container in real time
+    # Left side (.) = current directory on your machine
+    # Right side (/app) = WORKDIR inside the container
+    # This means code changes on your machine instantly appear inside the container
+    # WITHOUT rebuilding the image — essential for local development
+    # In production you would NOT have this — the image contains the code
     volumes:
       - .:/app    # mount code so changes reflect without rebuild
+
+    # Map port 8001 on your local machine to port 8000 inside the container
+    # Visit http://localhost:8001/docs on your browser to reach the FastAPI app
     ports:
       - "8001:8000"    # host:container — access on localhost:8001
+    
+    # Environment variables injected into the FastAPI container at runtime
+    # Notice DATABASE_URL uses 'db' as the hostname — not 'localhost'
+    # 'db' = the service name of our Postgres container above
+    # Docker's internal DNS resolves 'db' to the Postgres container's IP automatically
     env_file:
       - .env
+
+    # depends_on with condition means: don't start the API until 'db' is healthy
+    # This solves the race condition where API starts before Postgres is ready
+    # condition: service_healthy uses the healthcheck we defined above
     depends_on:
       db:
         condition: service_healthy
 
+# Named volumes declaration
+# Docker manages the actual storage location on your machine
+# Listing it here makes it a persistent, named volume that survives container restarts
 volumes:
   fastapi_postgres_data:
