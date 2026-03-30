@@ -1,0 +1,18 @@
+# Virtual environment — never commit this, it's huge and machine-specific
+virtual/
+
+# Environment variables — never commit, contains secrets
+.env
+
+# Python cache files — auto-generated, not needed in git
+__pycache__/
+*.pyc
+*.pyo
+
+# PyCharm / VS Code settings
+.idea/
+.vscode/
+
+# Test coverage reports
+.coverage
+htmlcov/
