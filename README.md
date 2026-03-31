@@ -122,26 +122,3 @@ Authorization: Bearer <your_token>
 | Login Format   | JSON body          | OAuth2 form data         |
 | Best Use Case  | Full applications  | Microservices / APIs     |
 
----
-
-## Notes
-
-- This project is intentionally minimal to focus on framework comparison  
-- FastAPI requires more setup but gives better performance and control  
-- Django provides more built-in features for rapid development  
-
----
-
-## Future Improvements
-
-- Add refresh tokens  
-- Add role-based authorization  
-- Integrate Alembic migrations  
-- Add test suite (pytest)  
-- CI/CD pipeline  
-
----
-
-## License
-
-This project is for educational purposes.
