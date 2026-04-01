@@ -11,7 +11,7 @@ load_dotenv()  # Load environment variables from .env file
 # Format: postgresql://user:password@host:port/dbname
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "postgresql://rishit:Lucifer@14@localhost:5432/fastapi_db"
+    "postgresql://DATABASE_USER:DATABASE_PASSWORD@localhost:5432/DATABASE_NAME"
     )
 
 # create_engine creates the connection pool to PostgreSQL
