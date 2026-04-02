@@ -56,6 +56,23 @@ services:
       retries: 5
 
   # 'api' is our FastAPI container — built from our local Dockerfile
+
+  redis:
+    image: redis:7-alpine
+    container_name: fastapi_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - fastapi_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      
+    
   web:
     # build: . tells Docker Compose to build the image using the Dockerfile
     # in the current directory (.) instead of pulling from Docker Hub
@@ -106,3 +123,4 @@ services:
 # Listing it here makes it a persistent, named volume that survives container restarts
 volumes:
   fastapi_postgres_data:
+  fastapi_redis_data:

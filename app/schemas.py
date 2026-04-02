@@ -14,6 +14,10 @@ class UserCreate(BaseModel):
     password: str
     password2: str
 
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    password: Optional[str] = None
+
 # UserResponse = what the server sends back when a user is created
 class UserResponse(BaseModel):
     id: int
